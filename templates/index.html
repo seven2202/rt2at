@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Token 转换工具</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f7fb;
+            border-left: 5px solid #3498db;
+            word-break: break-all;
+        }
+        .error {
+            background-color: #fdf0f0;
+            border-left: 5px solid #e74c3c;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        .copy-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+        .copy-btn:hover {
+            background-color: #219653;
+        }
+        .copy-btn svg {
+            margin-right: 5px;
+            width: 16px;
+            height: 16px;
+        }
+        .token-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .result {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            width: 64px;
+            height: 34px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+            z-index: 10;
+        }
+        .copy-btn:hover {
+            background-color: #219653;
+        }
+        .copy-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(39, 174, 96, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .popup.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenAI Token 转换工具</h1>
+    
+    <div class="container">
+        <div class="form-group">
+            <label for="refreshToken">Refresh Token:</label>
+            <input type="text" id="refreshToken" placeholder="请输入您的 refresh_token">
+        </div>
+        
+        <button id="convertButton">转换为 Access Token</button>
+        
+        <div class="loading hidden" id="loading">
+            <div class="spinner"></div>
+            <p>正在处理，请稍候...</p>
+        </div>
+        
+        <div class="result hidden" id="result">
+            <h3>Access Token:</h3>
+            <div class="token-container">
+                <p id="accessToken"></p>
+            </div>
+            <button id="copyButton" class="copy-btn" title="复制到剪贴板">
+                <svg t="1744342865555" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2454" width="16" height="16"><path d="M661.333333 234.666667A64 64 0 0 1 725.333333 298.666667v597.333333a64 64 0 0 1-64 64h-469.333333A64 64 0 0 1 128 896V298.666667a64 64 0 0 1 64-64z m-21.333333 85.333333H213.333333v554.666667h426.666667v-554.666667z m191.829333-256a64 64 0 0 1 63.744 57.856l0.256 6.144v575.701333a42.666667 42.666667 0 0 1-85.034666 4.992l-0.298667-4.992V149.333333H384a42.666667 42.666667 0 0 1-42.368-37.674666L341.333333 106.666667a42.666667 42.666667 0 0 1 37.674667-42.368L384 64h447.829333z" fill="#ffffff" p-id="2455"></path></svg>
+            </button>
+        </div>
+        
+        <div id="popup" class="popup">复制成功!</div>
+        
+        <div class="result error hidden" id="error">
+            <h3>错误信息:</h3>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+    
+    <div class="info">
+        <p>此工具用于将 OpenAI 的 refresh_token 转换为 access_token。</p>
+        <p>所有处理均在服务器端完成，不会将您的 token 发送到第三方，也不会被记录。</p>
+    </div>
+
+    <script>
+        document.getElementById('convertButton').addEventListener('click', async function() {
+            const refreshToken = document.getElementById('refreshToken').value.trim();
+            
+            if (!refreshToken) {
+                showError('请输入 refresh_token');
+                return;
+            }
+            
+            // 显示加载状态
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ refresh_token: refreshToken }),
+                });
+                
+                const data = await response.json();
+                
+                // 隐藏加载状态
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (response.ok) {
+                    // 显示结果
+                    document.getElementById('accessToken').textContent = data.access_token;
+                    document.getElementById('result').classList.remove('hidden');
+                } else {
+                    // 显示错误
+                    showError(data.detail || '转换失败，请检查您的 refresh_token 是否有效');
+                }
+            } catch (error) {
+                // 隐藏加载状态并显示错误
+                document.getElementById('loading').classList.add('hidden');
+                showError('请求失败，请稍后再试');
+                console.error('Error:', error);
+            }
+        });
+        
+        // 复制功能
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const accessToken = document.getElementById('accessToken').textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(accessToken)
+                    .then(() => {
+                        showCopySuccess();
+                    })
+                    .catch(err => {
+                        console.error('无法复制文本: ', err);
+                        fallbackCopyTextToClipboard(accessToken);
+                    });
+            } else {
+                fallbackCopyTextToClipboard(accessToken);
+            }
+        });
+        
+        // 复制功能的后备方案（对于不支持 navigator.clipboard 的浏览器）
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // 使 textarea 不可见
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    console.error('复制失败');
+                }
+            } catch (err) {
+                console.error('复制时出错: ', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess() {
+            const popup = document.getElementById('popup');
+            popup.classList.add('show');
+            
+            // 2秒后隐藏弹窗
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 2000);
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
